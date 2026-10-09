@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#111714"><meta name="description" content="YAMLで管理する縦型インターバルタイマー。ACT・REST、自動・手動進行と音声通知に対応。">
-<title>interval-timer Ver. 0.1</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%23c4f36b'/%3E%3Ctext x='20' y='29' text-anchor='middle' font-size='28'%3E◷%3C/text%3E%3C/svg%3E"><link rel="stylesheet" href="style.css">
+<title>interval-timer Ver. 0.1</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%23c4f36b'/%3E%3Ctext x='20' y='29' text-anchor='middle' font-size='28'%3E◷%3C/text%3E%3C/svg%3E"><link rel="stylesheet" href="style.css?v=0.1-layout2">
 </head>
 <body>
 <main class="shell">
@@ -17,11 +17,10 @@
   </div>
   <div class="bottom"><div class="summary"><div><span>ACT · カウントアップ</span><b id="act-summary">10:00</b></div><div><span>REST · カウントダウン</span><b id="rest-summary">01:00</b></div></div>
   <div class="controls"><button id="start" class="primary" disabled>▶ START</button><button id="stop" disabled>Ⅱ STOP</button><button id="reset" disabled>↺ RESET</button></div>
-  <div class="toolbar"><button id="mute" aria-pressed="false">音声 ON</button><button id="fullscreen">全画面</button><button id="settings-toggle" aria-expanded="true" aria-controls="settings">設定を閉じる</button></div>
+  <div class="toolbar"><button id="mute" aria-pressed="false">音声 ON</button><button id="fullscreen">全画面</button><button id="settings-toggle" aria-expanded="false" aria-controls="settings" aria-haspopup="dialog">⚙ 設定</button></div>
   <p id="state" role="status" aria-live="polite">設定を読み込んでいます…</p></div>
-</section>
-<aside id="settings" class="settings" aria-label="設定">
-  <div class="settings-heading"><div><span class="eyebrow">MAKE IT YOUR RHYTHM</span><h2>タイマー設定</h2></div><span class="pill">YAML SYNC</span></div>
+<dialog id="settings" class="settings" aria-labelledby="settings-title">
+  <div class="settings-heading"><div><span class="eyebrow">MAKE IT YOUR RHYTHM</span><h2 id="settings-title">タイマー設定</h2></div><button id="settings-close" aria-label="設定を閉じる">✕ 閉じる</button></div>
   <p class="muted">画面の変更はYAMLと同期します。時間・表示・音源の変更はRESET後に反映できます。</p>
   <form id="config-form"><fieldset id="editable"><legend>時間と進行</legend><div class="fields">
   <label>ACT（秒）<input type="number" data-path="timer.act_seconds" min="1" max="86400" step="any" required></label>
@@ -36,11 +35,11 @@
   <label class="check"><input type="checkbox" data-path="display.show_tenths">0.1秒を表示</label>
   <label>全体音量（0〜1）<input type="number" data-path="audio.volume" min="0" max="1" step="any" required></label>
   </div><p class="muted">音源は synth:beep / horn / bell / gong、またはMP3・WAVのURL・相対パスを指定。外部URLはCORS許可が必要です。</p><div id="sound-fields"></div></details>
-  <button class="apply" type="submit">設定を反映・保存</button></fieldset></form>
+  <button class="apply" type="submit">保存してタイマーへ</button></fieldset></form>
   <details class="yaml-section"><summary>YAMLを編集・読み込み・書き出し</summary><label for="yaml">設定YAML</label><textarea id="yaml" spellcheck="false" rows="22"></textarea>
   <div class="yaml-actions"><button id="apply-yaml">YAMLを反映</button><button id="export">ダウンロード</button><label class="file-button">ファイルを読み込み<input type="file" id="import" accept=".yaml,.yml,text/yaml"></label><button id="defaults">初期設定に戻す</button></div></details>
   <p id="message" role="status" aria-live="polite"></p>
   <p class="footnote">自動：ACT → REST → 次のACT。RESTの最後に予告音が鳴ります。手動：各区間の終了で待機し、STARTで次へ進みます。最後のACTで全体終了です。<br>画面を表示したまま使用してください。非表示・スリープ中の音声タイミングは保証できません。音声は合成音のため、実録音とは異なります。</p>
   <a class="repo-link" href="https://github.com/kojikomatsuzaki/interval-timer" target="_blank" rel="noopener">GitHub / interval-timer ↗</a>
-</aside></main><script type="module" src="app.js"></script>
+</dialog></section></main><script type="module" src="app.js?v=0.1-layout2"></script>
 </body></html>

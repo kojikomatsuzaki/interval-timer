@@ -75,7 +75,7 @@ $('start').addEventListener('click',async()=>{
   try {
     audio.cancel();
     if (config.audio.enabled) await audio.unlock();
-    engine.start(performance.now()); requestWake();
+    $('settings').close(); engine.start(performance.now()); requestWake();
   } catch(e) { message(e.message,true); }
   finally { busy=false; render(); }
 });
@@ -87,15 +87,25 @@ $('mute').addEventListener('click',async()=>{
   if (config.audio.enabled) { try { await audio.unlock(); } catch(e) { config.audio.enabled=false; sync(); save(); message(e.message,true); } }
 });
 $('fullscreen').addEventListener('click',async()=>{
-  try { if (document.fullscreenElement) await document.exitFullscreen(); else await document.querySelector('.timer-screen').requestFullscreen(); }
+  try { if (document.fullscreenElement) await document.exitFullscreen(); else await document.querySelector('.shell').requestFullscreen(); }
   catch { message('全画面表示に対応していない環境です。ブラウザの全画面機能を使ってください。',true); }
 });
 document.addEventListener('fullscreenchange',()=>{$('fullscreen').textContent=document.fullscreenElement?'全画面を終了':'全画面';});
-$('settings-toggle').addEventListener('click',()=>{const hidden=!$('settings').hidden;$('settings').hidden=hidden;$('settings-toggle').textContent=hidden?'設定を開く':'設定を閉じる';$('settings-toggle').setAttribute('aria-expanded',String(!hidden));});
+// 設定は画面に重ねて表示し、タイマーの高さを変えない。
+$('settings-toggle').addEventListener('click',()=>{
+  $('settings').showModal(); $('settings-toggle').setAttribute('aria-expanded','true');
+});
+$('settings-close').addEventListener('click',()=> $('settings').close());
+$('settings').addEventListener('close',()=> $('settings-toggle').setAttribute('aria-expanded','false'));
+$('settings').addEventListener('click',e=>{
+  if(e.target!==$('settings')) return;
+  const r=$('settings').getBoundingClientRect();
+  if(e.clientX<r.left || e.clientX>r.right || e.clientY<r.top || e.clientY>r.bottom) $('settings').close();
+});
 document.addEventListener('visibilitychange',()=>{if(engine?.running){engine.tick(performance.now());audio.cancel();if(!document.hidden)requestWake();}render();});
 // ===== 4. 画面入力・YAML入出力 =====
-$('config-form').addEventListener('input',()=>{if(engine?.phase==='idle'){try{$('yaml').value=serialize(validate(fromForm()));message('未反映の変更があります。「設定を反映・保存」を押してください。');}catch(e){message(e.message,true);}}});
-$('config-form').addEventListener('submit',e=>{e.preventDefault();try{apply(fromForm());}catch(error){message(error.message,true);}});
+$('config-form').addEventListener('input',()=>{if(engine?.phase==='idle'){try{$('yaml').value=serialize(validate(fromForm()));message('未反映の変更があります。「保存してタイマーへ」を押してください。');}catch(e){message(e.message,true);}}});
+$('config-form').addEventListener('submit',e=>{e.preventDefault();try{apply(fromForm());$('settings').close();}catch(error){message(error.message,true);}});
 $('apply-yaml').addEventListener('click',()=>{try{apply(parseConfig($('yaml').value));}catch(e){message(e.message,true);}});
 $('defaults').addEventListener('click',()=>{try{apply(structuredClone(defaults));}catch(e){message(e.message,true);}});
 $('import').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>200000)throw new Error('YAMLは200KB以内にしてください。');apply(parseConfig(await file.text()));}catch(error){message(error.message,true);}finally{e.target.value='';}});
