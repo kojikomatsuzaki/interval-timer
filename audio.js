@@ -1,18 +1,26 @@
 import { resolveSound, SILENCE } from './catalog.js';
 // ===== 1. ユーザー操作で音声を有効化・独自音源を準備 =====
 export class AudioPlayer {
-  constructor(config, report, local) { this.local = local; this.config = config; this.report = report; this.buffers = new Map(); this.nodes = new Set(); this.scheduled = new Set(); }
+  constructor(config, report, local) { this.generation = 0; this.local = local; this.config = config; this.report = report; this.buffers = new Map(); this.nodes = new Set(); this.scheduled = new Set(); }
   async unlock() {
-    this.context ||= new (window.AudioContext || window.webkitAudioContext)();
-    await this.context.resume();
-    if (this.context.state !== 'running') throw new Error('音声が有効になりません。もう一度STARTを押してください。');
+    const generation=this.generation;
+    let context;
+    try { context=await this.unlockContext(); }
+    catch(error) { if(generation!==this.generation)return;throw error; }
+    const active=()=>generation===this.generation && context===this.context;
+    if (!active()) return;
+    if (context.state !== 'running') throw new Error('音声が有効になりません。もう一度STARTを押してください。');
     await Promise.all(['countdown','start','minute','warning','end'].map(key=>[key,resolveSound(this.config,key)]).filter(([key,s])=>!this.local?.get(key) && s.source !== SILENCE && !s.source.startsWith('synth:')).map(async ([key,s])=>{
       if (this.buffers.has(s.source)) return;
       try {
         const response = await fetch(s.source, { signal:AbortSignal.timeout(8000) });
+        if (!active()) return;
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        this.buffers.set(s.source,await this.context.decodeAudioData(await response.arrayBuffer()));
-      } catch(e) { this.report(`${key}音源を読み込めないため合成音で再生します: ${e.message}`); }
+        const bytes=await response.arrayBuffer();
+        if (!active()) return;
+        const buffer=await context.decodeAudioData(bytes);
+        if (active()) this.buffers.set(s.source,buffer);
+      } catch(e) { if (active()) this.report(`${key}音源を読み込めないため合成音で再生します: ${e.message}`); }
     }));
   }
   // ===== 2. Web Audio時計に予約。連打の間隔は描画更新に依存しない =====
@@ -48,8 +56,13 @@ export class AudioPlayer {
       osc.connect(gain).connect(this.context.destination); this.track(osc,gain); osc.start(at); osc.stop(at+duration+0.02);
     }
   }
-  async decode(bytes) { await this.unlockContext(); return this.context.decodeAudioData(bytes); }
-  async unlockContext() { this.context ||= new (window.AudioContext || window.webkitAudioContext)(); await this.context.resume(); }
+  async decode(bytes) {
+    // デコードには再生のresumeを待たない。Safariではファイル選択後の非同期処理に
+    // ユーザー操作の再生許可がなく、resumeが待機し続ける場合がある。
+    this.context ||= new (window.AudioContext || window.webkitAudioContext)();
+    return this.context.decodeAudioData(bytes);
+  }
+  async unlockContext() { this.context ||= new (window.AudioContext || window.webkitAudioContext)(); const context=this.context; await context.resume(); return context; }
   dispose() { this.cancel(); if (this.context) this.context.close().catch(()=>{}); this.context=undefined; this.buffers.clear(); }
-  cancel() { for (const node of this.nodes) { try { node.stop(); } catch {} } this.nodes.clear(); this.scheduled.clear(); }
+  cancel() { this.generation++; for (const node of this.nodes) { try { node.stop(); } catch {} } this.nodes.clear(); this.scheduled.clear(); }
 }

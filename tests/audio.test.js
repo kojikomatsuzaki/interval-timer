@@ -19,3 +19,23 @@ test('per notification silence, global mute and temporary local buffer override'
 test('unavailable standard audio uses notification fallback instead of stopping timer',()=>{
  const {c,player}=fixture();c.audio.catalog.missing={...c.audio.catalog.electronic_gong,source:'missing.wav'};c.audio.end.selected='missing';let kind;player.synth=(value)=>kind=value;player.play({id:'missing',key:'end',at:1000},1000);assert.equal(kind,'gong');
 });
+test('cancelling or disposing a pending preview ignores stale decode/error without warning',async()=>{
+ const oldFetch=globalThis.fetch;
+ try {
+  for(const dispose of [false,true]) {
+   const {c,player}=fixture();c.audio.catalog.wave={...c.audio.catalog.electronic_gong,source:'test.wav'};c.audio.start.selected='wave';
+   let release,decoded=0;const warnings=[];player.report=text=>warnings.push(text);
+   player.context.state='running';player.context.resume=async()=>{};player.context.close=async()=>{};player.context.decodeAudioData=async()=>{decoded++;return {};};
+   globalThis.fetch=()=>new Promise(resolve=>release=resolve);
+   const pending=player.unlock();await new Promise(resolve=>setTimeout(resolve,0));
+   if(dispose)player.dispose();else player.cancel();
+   release({ok:true,arrayBuffer:async()=>new ArrayBuffer(0)});await pending;
+   assert.equal(decoded,0);assert.deepEqual(warnings,[]);assert.equal(player.buffers.size,0);
+  }
+ } finally {globalThis.fetch=oldFetch;}
+});
+test('local decode succeeds with suspended context without waiting for playback permission',async()=>{
+ const {player}=fixture();let resumes=0;const bytes=new ArrayBuffer(4);
+ player.context.state='suspended';player.context.resume=()=>{resumes++;return new Promise(()=>{});};player.context.decodeAudioData=async input=>({input});
+ assert.deepEqual(await player.decode(bytes),{input:bytes});assert.equal(resumes,0);
+});

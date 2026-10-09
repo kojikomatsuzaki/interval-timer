@@ -17,7 +17,7 @@ for(const [name,executablePath] of browsers){
  const rect=await page.locator('.timer-screen').boundingBox();assert.ok(Math.abs(rect.width/rect.height-16/9)<.01);assert.ok(rect.y+rect.height<=1000);assert.equal(await page.locator('#settings').isVisible(),false);checks++;
  await page.screenshot({path:`${output}/${name.toLowerCase()}-timer.png`});
  const decoded=await page.evaluate(async()=>{const ctx=new AudioContext(),result=[];try{for(const name of ['soft-chime','bright-bell','low-gong','short-horn']){const response=await fetch(`audio/${name}.wav`);if(!response.ok)throw Error(name);const buffer=await ctx.decodeAudioData(await response.arrayBuffer());result.push(buffer.duration>0&&buffer.numberOfChannels===1);}}finally{await ctx.close();}return result;});assert.deepEqual(decoded,[true,true,true,true]);checks++;
- const moduleURL=new URL('audio.js?v=0.2',base).href;
+ const moduleURL=new URL('audio.js?v=0.2-safari1',base).href;
  await page.evaluate(async url=>{const {AudioPlayer}=await import(url);const play=AudioPlayer.prototype.play;window.events=[];AudioPlayer.prototype.play=function(event,now){window.events.push({key:event.key,at:event.at,local:!!this.local?.get(event.key),enabled:this.config.audio.enabled,selected:this.config.audio[event.key].selected});return play.call(this,event,now);};},moduleURL);
  async function settings(){await page.locator('#settings-toggle').click();if(!(await page.locator('#editable details').evaluate(el=>el.open)))await page.locator('#editable details summary').click();}
  await settings();assert.equal(await page.locator('[data-sound=start] option').count(),12);
@@ -27,7 +27,7 @@ for(const [name,executablePath] of browsers){
  const [chooser]=await Promise.all([page.waitForEvent('filechooser'),page.locator('[data-sound=start]').selectOption('__local')]);
  await chooser.setFiles({name:'PRIVATE-LOCAL-123.mp3',mimeType:'audio/mpeg',buffer:mp3});await page.waitForFunction(()=>document.querySelector('[data-local=start]').textContent.includes('PRIVATE-LOCAL'));
  await page.locator('[data-preview=start]').click();await page.waitForTimeout(300);assert.ok((await page.evaluate(()=>window.events)).some(e=>e.local));
- await page.locator('[data-file=start]').setInputFiles({name:'PRIVATE-LOCAL-456.wav',mimeType:'audio/wav',buffer:wav});await page.waitForFunction(()=>document.querySelector('[data-local=start]').textContent.includes('456'));assert.ok((await page.evaluate(()=>window.revoked)).some(url=>url.startsWith('blob:')));checks++;
+ const [wavChooser]=await Promise.all([page.waitForEvent('filechooser'),page.locator('[data-choose=start]').click()]);await wavChooser.setFiles({name:'PRIVATE-LOCAL-456.wav',mimeType:'audio/wav',buffer:wav});await page.waitForFunction(()=>document.querySelector('[data-local=start]').textContent.includes('456'));assert.ok((await page.evaluate(()=>window.revoked)).some(url=>url.startsWith('blob:')));checks++;
  const previous=await page.locator('[data-local=start]').innerText();
  await page.locator('[data-file=start]').setInputFiles({name:'large.wav',mimeType:'audio/wav',buffer:Buffer.alloc(20971521)});await page.waitForFunction(()=>document.querySelector('#message').textContent.includes('20MB'));assert.equal(await page.locator('[data-local=start]').innerText(),previous);
  await page.locator('[data-file=start]').setInputFiles({name:'bad.wav',mimeType:'audio/wav',buffer:Buffer.from('invalid audio')});await page.waitForFunction(()=>document.querySelector('#message').textContent.includes('読み込めません'));assert.equal(await page.locator('[data-local=start]').innerText(),previous);checks++;
@@ -58,6 +58,12 @@ for(const [name,executablePath] of browsers){
  page.once('dialog',d=>d.accept('audio/nonexistent.wav'));await page.locator('[data-sound=start]').selectOption('__url');await page.locator('[data-preview=start]').click();await page.waitForFunction(()=>document.querySelector('#message').textContent.includes('合成音で再生'));assert.equal(await page.locator('#phase').innerText(),'READY');checks++;
  await page.locator('#settings-close').click();await page.locator('#fullscreen').click();await page.waitForFunction(()=>!!document.fullscreenElement);await settings();assert.equal(await page.locator('#settings').isVisible(),true);await page.locator('#settings-close').click();await page.locator('#fullscreen').click();checks++;
  await page.goto(new URL('tutorial.html',base).href);assert.match(await page.locator('h1').innerText(),/はじめて/);await page.screenshot({path:`${output}/${name.toLowerCase()}-tutorial.png`,fullPage:true});await page.setViewportSize({width:390,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`${output}/${name.toLowerCase()}-tutorial-mobile.png`,fullPage:true});checks++;
- assert.deepEqual(errors,[]);console.log(`${name}: 18 browser checks PASS, no JavaScript errors. ${requests.length} observed GET requests.`);await browser.close();
+ // Trial load is deliberately pending when Apply disposes the player.
+ const regression=await browser.newContext(),race=await regression.newPage(),raceErrors=[];race.on('pageerror',e=>raceErrors.push(e.message));
+ let delayed;await race.route('**/audio/soft-chime.wav',route=>{delayed=route;});
+ await race.goto(base);await race.waitForFunction(()=>!document.querySelector('#start').disabled);await race.locator('#settings-toggle').click();await race.locator('#editable details summary').click();await race.locator('[data-sound=start]').selectOption('soft_chime');
+ await Promise.all([race.waitForRequest('**/audio/soft-chime.wav'),race.locator('[data-preview=start]').click()]);await race.locator('.apply').click();
+ await delayed.fulfill({body:wav,contentType:'audio/wav'});await race.waitForTimeout(400);assert.equal(await race.locator('#notice').isVisible(),false);assert.deepEqual(raceErrors,[]);await regression.close();checks++;
+ assert.deepEqual(errors,[]);console.log(`${name}: 19 browser checks PASS, no JavaScript errors. ${requests.length} observed GET requests.`);await browser.close();
 }
 console.log(`Total ${checks} browser checks PASS. Outputs: ${output}`);

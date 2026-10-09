@@ -1,8 +1,8 @@
 import { parseConfig, serialize, validate, emergencyConfig } from './config.js?v=0.2';
 import { TimerEngine } from './engine.js';
-import { AudioPlayer } from './audio.js?v=0.2';
+import { AudioPlayer } from './audio.js?v=0.2-safari1';
 import { LocalAudioStore } from './local-audio.js';
-import { SoundSettings } from './sound-settings.js';
+import { SoundSettings } from './sound-settings.js?v=0.2-safari1';
 // ===== 1. 設定と画面の同期 =====
 const $ = id => document.getElementById(id), storageKey = 'interval-timer:0.2';
 let config, defaults, engine, audio, busy=false, wakeLock;

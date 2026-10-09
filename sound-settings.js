@@ -7,11 +7,11 @@ export class SoundSettings {
     const names={countdown:'開始予告',start:'ACT開始',minute:'ACT中の定期通知',warning:'終了前の警告',end:'ACT終了'};
     for(const key of SOUND_KEYS) {
       const section=document.createElement('section'); section.className='sound-setting';
-      section.innerHTML=`<h3>${names[key]}</h3><div class="fields"><label class="source">音源<select data-sound="${key}" data-path="audio.${key}.selected"></select></label><label>音量<input type="number" min="0" max="1" step="any" data-path="audio.${key}.volume" required></label><label>再生回数<input type="number" min="1" max="10" step="1" data-path="audio.${key}.count" required></label><label>間隔（秒）<input type="number" min="0.05" max="5" step="any" data-path="audio.${key}.interval_seconds" required></label></div><p data-description="${key}" class="muted"></p><p data-local="${key}" class="local-note"></p><input type="file" data-file="${key}" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.webm,.opus,.aif,.aiff" hidden><button type="button" data-preview="${key}">試聴</button> <button type="button" data-clear="${key}">標準音源に戻す</button>`;
+      section.innerHTML=`<h3>${names[key]}</h3><div class="fields"><label class="source">音源<select data-sound="${key}" data-path="audio.${key}.selected"></select></label><label>音量<input type="number" min="0" max="1" step="any" data-path="audio.${key}.volume" required></label><label>再生回数<input type="number" min="1" max="10" step="1" data-path="audio.${key}.count" required></label><label>間隔（秒）<input type="number" min="0.05" max="5" step="any" data-path="audio.${key}.interval_seconds" required></label></div><p data-description="${key}" class="muted"></p><p data-local="${key}" class="local-note"></p><input type="file" data-file="${key}" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.webm,.opus,.aif,.aiff" hidden><button type="button" data-choose="${key}">自分の音源を選ぶ</button> <button type="button" data-preview="${key}">試聴</button> <button type="button" data-clear="${key}">標準音源に戻す</button>`;
       container.append(section);
     }
     container.addEventListener('change',e=>this.change(e));
-    container.addEventListener('click',e=>{const key=e.target.dataset.clear;if(key&&editable()){cancelPreview();local.clear(key);this.update(key);this.report('ローカル音源を解除しました。');}});
+    container.addEventListener('click',e=>{const choose=e.target.dataset.choose;if(choose&&editable()){cancelPreview();this.file(choose).click();return;}const key=e.target.dataset.clear;if(key&&editable()){cancelPreview();local.clear(key);this.update(key);this.report('ローカル音源を解除しました。');}});
     for(const key of SOUND_KEYS) {
       const file=this.file(key);
       file.addEventListener('cancel',()=>this.update(key));
@@ -47,7 +47,7 @@ export class SoundSettings {
   change(e) {
     const key=e.target.dataset.sound;if(!key||!this.editable())return;
     const select=e.target;this.cancelPreview();
-    if(select.value==='__local'){select.value=select.dataset.standard;this.file(key).click();return;}
+    if(select.value==='__local'){select.value=select.dataset.standard;this.report('ファイル選択が開かない場合は「自分の音源を選ぶ」を押してください。');this.file(key).click();return;}
     if(select.value==='__url'){
       const source=window.prompt('HTTP(S) URLまたは相対パス（外部URLにはCORS許可が必要です）');
       if(!source){this.update(key);return;}
