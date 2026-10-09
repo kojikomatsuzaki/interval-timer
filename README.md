@@ -101,6 +101,8 @@ ES ModulesとYAMLの取得を使うため、ファイルの直接オープンで
 | DJエアホーン（レゲエホーン） | [エスフェクツ](https://esffects.net/) — [音源配布ページ](https://esffects.net/397.html) | `audio/reggaehorn.mp3`。現在の `config/timer.yaml` ではACT開始音に指定されています。 |
 | 試合開始のゴング | [音のたからばこ](https://otobako.org/) — [音源配布ページ](https://otobako.org/sound/popular-024.html) | `audio/gon3times.mp3`。ファイルは配置されていますが、現在の `config/timer.yaml` のACT終了音は `synth:gong`（合成音）のままです。 |
 
+| 卓上ベル・カウンターベル（毎分通知用） | [OpenTracks（旧DOVA-SYNDROME）](https://opentracks.com/) — [音源配布ページ](https://opentracks.com/se/detail/1138)、制作者：[NaruIDEA](https://opentracks.com/creator/detail/365) | ユーザー指定の毎分通知用音源。`audio/counterbell.mp3` は配置済みです。現在の `config/timer.yaml` の定期ベル・終了前ベルは `synth:bell`（合成音）のままです。 |
+
 音源の出典はユーザー指定に基づきます。配置されたMP3と配布元ファイルのバイナリ同一性、個別の許諾取得状況は未確認です。上記は現在のリポジトリ設定であり、ブラウザに保存した設定によって実際の再生音源は変わります。既存の「音声」節にある合成ホーンの説明は初期実装時のものです。
 
 ### レゲエホーン：確認できた利用条件
@@ -116,6 +118,14 @@ ES ModulesとYAMLの取得を使うため、ファイルの直接オープンで
 - 個別の[音源配布ページ](https://otobako.org/sound/popular-024.html)では、元音源は作者 **IOII-IOIO-IIOI** の [Dingdingding.wav（Wikimedia Commons）](https://commons.wikimedia.org/wiki/File:Dingdingding.wav)、元音源のライセンスはCC0 1.0と案内されています。同サイトの配布版には音量調整・残響追加・フェードアウトの編集が行われています。これは配布サイトによる説明であり、元音源のライセンスを本確認で独立に検証したものではありません。
 - 配布ページには同サイトが配布するファイル自体の再配布・販売を禁止する記載があり、利用規約では素材そのもの・ほぼ無加工の素材を「素材集として」再配布・販売することが禁止されています。元音源の扱いと、同サイトが編集して配布するファイルの扱いは区別されています。
 - 元音源がCC0という案内から、同サイトの編集済みMP3も無条件に再配布できるとは判断しません。公開GitHubリポジトリへのMP3同梱・GitHub Pagesでの配信が許容されるかは、上記記載だけでは確定できず、個別の許諾は未確認です。
+
+### カウンターベル：出典と確認できた利用条件
+
+毎分通知に使用する音源は、ユーザー申告により **「卓上ベル・カウンターベル」／NaruIDEA**、配布元 **OpenTracks（旧DOVA-SYNDROME）** です。出典：[音源配布ページ](https://opentracks.com/se/detail/1138)。
+
+- [制作者プロフィール](https://opentracks.com/creator/detail/365)の利用条件はサイトの[音源利用ライセンス](https://opentracks.com/help/articles/license/)に準拠すると記載されています。同ライセンスでは利用料・クレジット表示は不要とされていますが、本READMEでは出典と制作者を記録します。
+- 同ライセンスでは、音源の配布・販売、および利用者が音声ファイルへ容易にアクセス・複製できる状態での利用が禁止されています。クレジット表記の有無にかかわらず適用されるため、公開リポジトリへのMP3同梱を許可済みとは扱いません。
+- 同ライセンスには、ツールアプリ・プラットフォームへの組み込みと二次利用者へのライセンスは事前に運営への相談が必要と記載されています。本タイマーへの組み込み・GitHub Pagesでの配信について、個別の許諾取得状況は未確認です。音源ファイルと設定の変更はこの追記では行っていません。
 
 ### 再配布についての扱い
 
