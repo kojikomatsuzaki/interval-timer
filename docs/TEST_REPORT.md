@@ -13,7 +13,7 @@
 
 ## ブラウザ操作検証
 
-`tests/browser.mjs`：Chrome 18項目、Edge 18項目、合計36項目成功。インストール済みの実ブラウザをheadlessで使用し、JavaScriptエラーなし。
+`tests/browser.mjs`：Chrome 18項目、Edge 18項目、合計36項目成功。加えて、旧URLのキャッシュを模擬した起動テストを各1件（計2件）実施し成功。ブラウザ検証は総計38項目です。インストール済みの実ブラウザをheadlessで使用し、JavaScriptエラーなし。
 
 1. 横16:9、画面内収まり、設定ダイアログ非表示
 2. YAMLカタログの一覧・選択・説明・試聴、READY維持
@@ -48,6 +48,6 @@
 1. リポジトリのルートで `python3 -m http.server 8766 --bind 127.0.0.1`。
 2. `node --test tests/*.test.js`。
 3. Playwrightを用意して `node tests/browser.mjs`。テストは新しいブラウザコンテキストを使用し、通常利用者の保存設定を変更しません。
-4. 環境に応じてtests/browser.mjsのChrome/Edge実行パスを調整。`TEST_URL` と `TEST_OUTPUT` で対象URL・スクリーンショット出力先を指定できます。
+4. 環境に応じてtests/browser.mjsのChrome/Edge実行パスを調整。`tests/cache.browser.mjs` は旧URLキャッシュを模擬する追加検証です。`TEST_URL` と `TEST_OUTPUT` で対象URL・スクリーンショット出力先を指定できます。
 
 本テストで権利者からの同梱許諾を得たことにはなりません。第三者MP3の再配布許諾はREADMEに記録したとおり未確認です。

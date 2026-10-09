@@ -1,6 +1,6 @@
-import { parseConfig, serialize, validate, emergencyConfig } from './config.js';
+import { parseConfig, serialize, validate, emergencyConfig } from './config.js?v=0.2';
 import { TimerEngine } from './engine.js';
-import { AudioPlayer } from './audio.js';
+import { AudioPlayer } from './audio.js?v=0.2';
 import { LocalAudioStore } from './local-audio.js';
 import { SoundSettings } from './sound-settings.js';
 // ===== 1. 設定と画面の同期 =====
@@ -130,7 +130,7 @@ window.addEventListener('pageshow',e=>{if(e.persisted&&engine){engine.pause(perf
 // ===== 5. 初期設定の取得失敗時も起動し、旧保存設定を移行 =====
 const warnings=[];
 try {
-  const response=await fetch('./config/timer.yaml');if(!response.ok)throw new Error(`HTTP ${response.status}`);
+  const response=await fetch('./config/timer.yaml?v=0.2');if(!response.ok)throw new Error(`HTTP ${response.status}`);
   defaults=parseConfig(await response.text(),{warnings});
 } catch(e) { defaults=emergencyConfig(); warnings.push(`初期YAMLを読み込めないため合成音の緊急設定で起動しました: ${e.message}`); }
 let initial=structuredClone(defaults);
