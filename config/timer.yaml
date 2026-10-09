@@ -1,5 +1,5 @@
-# interval-timer Ver. 0.1 — 時間の単位は秒
-version: '0.1'
+# interval-timer Ver. 0.2 — 時間の単位は秒
+version: '0.2'
 timer:
   act_seconds: 600
   rest_seconds: 60
@@ -15,28 +15,122 @@ display:
 audio:
   enabled: true
   volume: 0.7
+  local_max_bytes: 20971520 # 20 MiB
   countdown:
-    source: synth:beep
+    selected: countdown_beep
     volume: 0.5
     count: 1
     interval_seconds: 0.15
   start:
-    source: audio/reggaehorn.mp3
+    selected: reggae_horn
     volume: 0.8
     count: 1
     interval_seconds: 0.15
   minute:
-    source: synth:bell
+    selected: electronic_bell
     volume: 0.3
     count: 1
     interval_seconds: 0.15
   warning:
-    source: synth:bell
+    selected: electronic_bell
     volume: 0.3
     count: 2
     interval_seconds: 0.18
   end:
-    source: synth:gong
+    selected: electronic_gong
     volume: 0.8
     count: 5
     interval_seconds: 0.2
+  catalog:
+    reggae_horn:
+      name: "レゲエホーン（許諾未確認・既存音源）"
+      description:
+        text: "従来のACT開始音です。公開ファイルの再配布許諾は未確認です。"
+        language: ja
+        author: "OpenAI Codex（AI草稿）"
+        created: "2026-10-09"
+      source: audio/reggaehorn.mp3
+      provider: "エスフェクツ"
+      attribution_url: https://esffects.net/397.html
+      license: null # 公開リポジトリへの同梱許諾は未確認
+    soft_chime:
+      name: "やわらかいチャイム"
+      description:
+        text: "数式から生成した、やわらかい通知音です。"
+        language: ja
+        author: "OpenAI Codex（AI草稿）"
+        created: "2026-10-09"
+      source: audio/soft-chime.wav
+      provider: "Interval Timer（プログラム生成）"
+    bright_bell:
+      name: "明るいベル"
+      description:
+        text: "数式から生成した、高めのベル音です。"
+        language: ja
+        author: "OpenAI Codex（AI草稿）"
+        created: "2026-10-09"
+      source: audio/bright-bell.wav
+      provider: "Interval Timer（プログラム生成）"
+    low_gong:
+      name: "低いゴング"
+      description:
+        text: "数式から生成した、低い終了通知音です。"
+        language: ja
+        author: "OpenAI Codex（AI草稿）"
+        created: "2026-10-09"
+      source: audio/low-gong.wav
+      provider: "Interval Timer（プログラム生成）"
+    short_horn:
+      name: "短いホーン"
+      description:
+        text: "数式から生成した、短い開始通知音です。"
+        language: ja
+        author: "OpenAI Codex（AI草稿）"
+        created: "2026-10-09"
+      source: audio/short-horn.wav
+      provider: "Interval Timer（プログラム生成）"
+    countdown_beep:
+      name: "電子ビープ"
+      description:
+        text: "開始予告に使う短い電子音です。"
+        language: ja
+        author: "OpenAI Codex（AI草稿）"
+        created: "2026-10-09"
+      source: synth:beep
+      provider: "Interval Timer（プログラム生成）"
+    electronic_horn:
+      name: "合成ホーン"
+      description:
+        text: "ACT開始を知らせる合成ホーンです。"
+        language: ja
+        author: "OpenAI Codex（AI草稿）"
+        created: "2026-10-09"
+      source: synth:horn
+      provider: "Interval Timer（プログラム生成）"
+    electronic_bell:
+      name: "合成ベル"
+      description:
+        text: "毎分の通知や終了前の警告に使う合成ベルです。"
+        language: ja
+        author: "OpenAI Codex（AI草稿）"
+        created: "2026-10-09"
+      source: synth:bell
+      provider: "Interval Timer（プログラム生成）"
+    electronic_gong:
+      name: "合成ゴング"
+      description:
+        text: "ACT終了を知らせる合成ゴングです。"
+        language: ja
+        author: "OpenAI Codex（AI草稿）"
+        created: "2026-10-09"
+      source: synth:gong
+      provider: "Interval Timer（プログラム生成）"
+    silent:
+      name: "無音"
+      description:
+        text: "この通知だけを無音にします。"
+        language: ja
+        author: "OpenAI Codex（AI草稿）"
+        created: "2026-10-09"
+      source: silence
+      provider: "Interval Timer"

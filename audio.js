@@ -1,11 +1,12 @@
+import { resolveSound, SILENCE } from './catalog.js';
 // ===== 1. ユーザー操作で音声を有効化・独自音源を準備 =====
 export class AudioPlayer {
-  constructor(config, report) { this.config = config; this.report = report; this.buffers = new Map(); this.nodes = new Set(); this.scheduled = new Set(); }
+  constructor(config, report, local) { this.local = local; this.config = config; this.report = report; this.buffers = new Map(); this.nodes = new Set(); this.scheduled = new Set(); }
   async unlock() {
     this.context ||= new (window.AudioContext || window.webkitAudioContext)();
     await this.context.resume();
     if (this.context.state !== 'running') throw new Error('音声が有効になりません。もう一度STARTを押してください。');
-    await Promise.all(Object.entries(this.config.audio).filter(([,s])=>s?.source && !s.source.startsWith('synth:')).map(async ([key,s])=>{
+    await Promise.all(['countdown','start','minute','warning','end'].map(key=>[key,resolveSound(this.config,key)]).filter(([key,s])=>!this.local?.get(key) && s.source !== SILENCE && !s.source.startsWith('synth:')).map(async ([key,s])=>{
       if (this.buffers.has(s.source)) return;
       try {
         const response = await fetch(s.source, { signal:AbortSignal.timeout(8000) });
@@ -19,16 +20,18 @@ export class AudioPlayer {
     if (!this.context || !this.config.audio.enabled || this.scheduled.has(event.id)) return;
     this.scheduled.add(event.id);
     if (this.scheduled.size > 10000) this.scheduled = new Set([event.id]);
-    const s = this.config.audio[event.key], time = this.context.currentTime + Math.max(0,(event.at-now)/1000);
+    const s = this.config.audio[event.key], sound = resolveSound(this.config,event.key);
+    if (!this.local?.get(event.key) && sound.source === SILENCE) return;
+    const time = this.context.currentTime + Math.max(0,(event.at-now)/1000);
     const volume = this.config.audio.volume*s.volume;
     for (let i=0;i<s.count;i++) {
-      const at = time+i*s.interval_seconds, buffer = this.buffers.get(s.source);
+      const at = time+i*s.interval_seconds, buffer = this.local?.get(event.key)?.buffer || this.buffers.get(sound.source);
       if (buffer) {
         const source = this.context.createBufferSource(), gain = this.context.createGain();
         source.buffer = buffer; gain.gain.value = volume; source.connect(gain).connect(this.context.destination); this.track(source,gain); source.start(at);
       } else {
         const fallback = {countdown:'beep',start:'horn',minute:'bell',warning:'bell',end:'gong'}[event.key];
-        this.synth(s.source.startsWith('synth:') ? s.source.slice(6) : fallback, at, volume);
+        this.synth(sound.source.startsWith('synth:') ? sound.source.slice(6) : fallback, at, volume);
       }
     }
   }
@@ -45,5 +48,8 @@ export class AudioPlayer {
       osc.connect(gain).connect(this.context.destination); this.track(osc,gain); osc.start(at); osc.stop(at+duration+0.02);
     }
   }
+  async decode(bytes) { await this.unlockContext(); return this.context.decodeAudioData(bytes); }
+  async unlockContext() { this.context ||= new (window.AudioContext || window.webkitAudioContext)(); await this.context.resume(); }
+  dispose() { this.cancel(); if (this.context) this.context.close().catch(()=>{}); this.context=undefined; this.buffers.clear(); }
   cancel() { for (const node of this.nodes) { try { node.stop(); } catch {} } this.nodes.clear(); this.scheduled.clear(); }
 }

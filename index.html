@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#111714"><meta name="description" content="YAMLで管理する横型インターバルタイマー。ACT・REST、自動・手動進行と音声通知に対応。">
-<title>interval-timer Ver. 0.1</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%23c4f36b'/%3E%3Ctext x='20' y='29' text-anchor='middle' font-size='28'%3E◷%3C/text%3E%3C/svg%3E"><link rel="stylesheet" href="style.css?v=0.1-landscape1">
+<title>interval-timer Ver. 0.2</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%23c4f36b'/%3E%3Ctext x='20' y='29' text-anchor='middle' font-size='28'%3E◷%3C/text%3E%3C/svg%3E"><link rel="stylesheet" href="style.css?v=0.2">
 </head>
 <body>
 <main class="shell">
 <section class="timer-screen" aria-label="インターバルタイマー">
-  <header><div><span class="eyebrow">FOCUS / MOVE / RECOVER</span><h1 id="title">INTERVAL TIMER</h1></div><span class="version">VER. 0.1</span></header>
+  <header><div><span class="eyebrow">FOCUS / MOVE / RECOVER</span><h1 id="title">INTERVAL TIMER</h1></div><div class="header-links"><a href="tutorial.html">使い方</a><span class="version">VER. 0.2</span></div></header>
   <div class="stage"><div class="phase-line"><span id="phase">READY</span><span id="direction">準備完了</span></div>
   <div class="clock" id="clock" role="timer" aria-label="時間">00:00</div>
   <p id="phase-note">STARTで3秒前からカウントダウン</p>
@@ -31,15 +31,15 @@
   <label>定期ベル間隔（秒）<input type="number" data-path="timer.minute_interval_seconds" min="1" max="86400" step="any" required></label>
   <label>終了前ベル（残り秒・0で無効）<input type="number" data-path="timer.warning_before_seconds" min="0" max="86400" step="any" required></label>
   </div><details><summary>表示・音声の詳細</summary><div class="fields">
-  <label>画面タイトル<input data-path="display.title" maxlength="80" required></label><label>アクセント色<input type="color" data-path="display.accent"></label>
+  <label>画面タイトル<input data-path="display.title" maxlength="80"></label><label>アクセント色<input type="color" data-path="display.accent"></label>
   <label class="check"><input type="checkbox" data-path="display.show_tenths">0.1秒を表示</label>
   <label>全体音量（0〜1）<input type="number" data-path="audio.volume" min="0" max="1" step="any" required></label>
-  </div><p class="muted">音源は synth:beep / horn / bell / gong、またはMP3・WAVのURL・相対パスを指定。外部URLはCORS許可が必要です。</p><div id="sound-fields"></div></details>
+  </div><p class="muted">各通知に標準音・合成音・無音を選べます。「自分の音源を使用…」はこのページを開いている間だけ有効です。ファイルは外部送信・永続保存しません。試聴はタイマーを進めません。音声OFF中は試聴も無音です。</p><div id="sound-fields"></div></details>
   <button class="apply" type="submit">保存してタイマーへ</button></fieldset></form>
   <details class="yaml-section"><summary>YAMLを編集・読み込み・書き出し</summary><label for="yaml">設定YAML</label><textarea id="yaml" spellcheck="false" rows="22"></textarea>
   <div class="yaml-actions"><button id="apply-yaml">YAMLを反映</button><button id="export">ダウンロード</button><label class="file-button">ファイルを読み込み<input type="file" id="import" accept=".yaml,.yml,text/yaml"></label><button id="defaults">初期設定に戻す</button></div></details>
   <p id="message" role="status" aria-live="polite"></p>
-  <p class="footnote">自動：ACT → REST → 次のACT。RESTの最後に予告音が鳴ります。手動：各区間の終了で待機し、STARTで次へ進みます。最後のACTで全体終了です。<br>画面を表示したまま使用してください。非表示・スリープ中の音声タイミングは保証できません。音声は合成音のため、実録音とは異なります。</p>
+  <p class="footnote">自動：ACT → REST → 次のACT。RESTの最後に予告音が鳴ります。手動：各区間の終了で待機し、STARTで次へ進みます。最後のACTで全体終了です。<br>画面を表示したまま使用してください。非表示・スリープ中の音声タイミングは保証できません。音源の再生対応はブラウザにより異なります。</p>
   <a class="repo-link" href="https://github.com/kojikomatsuzaki/interval-timer" target="_blank" rel="noopener">GitHub / interval-timer ↗</a>
-</dialog></section></main><script type="module" src="app.js?v=0.1-landscape1"></script>
+</dialog></section><p id="notice" class="notice" role="status" hidden></p></main><script type="module" src="app.js?v=0.2"></script>
 </body></html>

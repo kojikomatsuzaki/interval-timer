@@ -26,3 +26,12 @@ h1{font-size:1.6cqw;letter-spacing:.15cqw;margin:.5cqw 0;overflow-wrap:anywhere}
 @media(max-width:600px),(max-height:480px){.controls button,.toolbar button{min-height:24px}.timer-screen{border-radius:8px}}
 @media(max-width:600px){.controls button{font-size:1.5cqw;padding:.6cqw .1cqw}.toolbar button{font-size:1.4cqw;padding:.4cqw .1cqw}.summary span{font-size:.85cqw}.summary b{font-size:2cqw}.bottom{gap:.3cqw .8cqw;grid-template-columns:1fr 1.6fr 1fr}}
 
+
+/* ===== Ver. 0.2 音源カタログと説明 ===== */
+.header-links { display:flex; align-items:center; gap:1em; }
+.header-links a { color:var(--muted); font-size:calc(var(--timer-width)*.012); }
+.local-note { color:var(--accent); overflow-wrap:anywhere; font-size:.85rem; }
+.sound-setting select { width:100%; }
+.sound-setting [data-description] { margin:.7em 0; overflow-wrap:anywhere; }
+
+.notice{position:fixed;bottom:8px;left:50%;transform:translateX(-50%);max-width:min(90vw,700px);background:#202a23;color:#ffb0a0;padding:8px 16px;border-radius:8px;font-size:12px;z-index:2;overflow-wrap:anywhere}

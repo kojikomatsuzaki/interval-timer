@@ -1,34 +1,35 @@
-import { parseConfig, serialize, validate, soundKeys } from './config.js';
+import { parseConfig, serialize, validate, emergencyConfig } from './config.js';
 import { TimerEngine } from './engine.js';
 import { AudioPlayer } from './audio.js';
+import { LocalAudioStore } from './local-audio.js';
+import { SoundSettings } from './sound-settings.js';
 // ===== 1. 設定と画面の同期 =====
-const $ = id => document.getElementById(id), storageKey = 'interval-timer:0.1';
+const $ = id => document.getElementById(id), storageKey = 'interval-timer:0.2';
 let config, defaults, engine, audio, busy=false, wakeLock;
-const names = {countdown:'開始予告 · 電子音',start:'ACT開始 · ホーン',minute:'定期通知 · ベル1回',warning:'終了前 · ベル2回',end:'ACT終了 · ゴング5回'};
-for (const key of soundKeys) {
-  const section=document.createElement('section'); section.className='sound-setting';
-  section.innerHTML=`<h3>${names[key]}</h3><div class="fields"><label class="source">音源<input data-path="audio.${key}.source" required></label><label>音量<input type="number" min="0" max="1" step="any" data-path="audio.${key}.volume" required></label><label>再生回数<input type="number" min="1" max="10" step="1" data-path="audio.${key}.count" required></label><label>間隔（秒）<input type="number" min="0.05" max="5" step="any" data-path="audio.${key}.interval_seconds" required></label></div><button type="button" data-preview="${key}">試聴</button>`;
-  $('sound-fields').append(section);
-}
-function message(text,error=false) { $('message').textContent=text; $('message').className=error?'error':''; }
+const local = new LocalAudioStore();
+let preview, previewToken=0;
+function cancelPreview() { previewToken++; preview?.cancel(); }
+const soundSettings = new SoundSettings($('sound-fields'),local,()=>audio,()=>config,()=>engine?.phase==='idle',message,cancelPreview);
+function message(text,error=false) { $('message').textContent=text; $('message').className=error?'error':''; $('notice').textContent=error?text:''; $('notice').hidden=!error; }
 function getPath(obj,path) { return path.split('.').reduce((o,k)=>o[k],obj); }
 function setPath(obj,path,value) { const keys=path.split('.'), last=keys.pop(); keys.reduce((o,k)=>o[k],obj)[last]=value; }
 function save() { try { localStorage.setItem(storageKey,serialize(config)); } catch { message('設定をブラウザに保存できません。YAMLをダウンロードしてください。',true); } }
 function sync() {
   document.querySelectorAll('[data-path]').forEach(input=> { const value=getPath(config,input.dataset.path); if (input.type==='checkbox') input.checked=value; else input.value=value; });
-  $('yaml').value=serialize(config); $('title').textContent=config.display.title; document.documentElement.style.setProperty('--accent',config.display.accent);
+  soundSettings.sync(config); $('yaml').value=serialize(config); $('title').textContent=config.display.title; document.documentElement.style.setProperty('--accent',config.display.accent);
   $('act-summary').textContent=format(config.timer.act_seconds*1000,false); $('rest-summary').textContent=format(config.timer.rest_seconds*1000,false);
   $('mode-label').textContent=config.timer.progression==='auto'?'自動進行':'手動進行';
   $('mute').textContent=config.audio.enabled?'音声 ON':'音声 OFF'; $('mute').setAttribute('aria-pressed',String(!config.audio.enabled));
 }
 function apply(next) {
   if (engine && engine.phase!=='idle') throw new Error('RESETしてから設定を変更してください。');
-  validate(next); audio?.cancel(); config=next;
-  audio=new AudioPlayer(config,(text)=>message(text,true)); engine=new TimerEngine(config,event=>audio.play(event));
+  validate(next); cancelPreview(); preview?.dispose(); preview=null; audio?.dispose(); config=next; local.maxBytes=config.audio.local_max_bytes;
+  audio=new AudioPlayer(config,(text)=>message(text,true),local); engine=new TimerEngine(config,event=>audio.play(event));
   sync(); save(); render(); message('設定を反映し、このブラウザに保存しました。');
 }
 function fromForm() {
   const next=structuredClone(config);
+  next.audio.catalog=structuredClone(soundSettings.catalog);
   document.querySelectorAll('[data-path]').forEach(input=>setPath(next,input.dataset.path,input.type==='checkbox'?input.checked:input.type==='number'?Number(input.value):input.value));
   return next;
 }
@@ -71,19 +72,19 @@ setInterval(()=>{
 },50);
 $('start').addEventListener('click',async()=>{
   if (busy || engine.running) return;
-  busy=true; render();
+  busy=true; local.cancelPending(); render();
   try {
-    audio.cancel();
+    cancelPreview(); audio.cancel();
     if (config.audio.enabled) await audio.unlock();
     $('settings').close(); engine.start(performance.now()); requestWake();
   } catch(e) { message(e.message,true); }
   finally { busy=false; render(); }
 });
-$('stop').addEventListener('click',()=>{engine.pause(performance.now());audio.cancel();render();});
-$('reset').addEventListener('click',()=>{audio.cancel();engine.reset();render();});
+$('stop').addEventListener('click',()=>{cancelPreview();engine.pause(performance.now());audio.cancel();render();});
+$('reset').addEventListener('click',()=>{cancelPreview();audio.cancel();engine.reset();render();});
 $('mute').addEventListener('click',async()=>{
   if (!config) return;
-  config.audio.enabled=!config.audio.enabled;audio.cancel();sync();save();
+  cancelPreview();config.audio.enabled=!config.audio.enabled;audio.cancel();sync();save();
   if (config.audio.enabled) { try { await audio.unlock(); } catch(e) { config.audio.enabled=false; sync(); save(); message(e.message,true); } }
 });
 $('fullscreen').addEventListener('click',async()=>{
@@ -96,7 +97,7 @@ $('settings-toggle').addEventListener('click',()=>{
   $('settings').showModal(); $('settings-toggle').setAttribute('aria-expanded','true');
 });
 $('settings-close').addEventListener('click',()=> $('settings').close());
-$('settings').addEventListener('close',()=> $('settings-toggle').setAttribute('aria-expanded','false'));
+$('settings').addEventListener('close',()=> {cancelPreview();$('settings-toggle').setAttribute('aria-expanded','false');});
 $('settings').addEventListener('click',e=>{
   if(e.target!==$('settings')) return;
   const r=$('settings').getBoundingClientRect();
@@ -104,26 +105,37 @@ $('settings').addEventListener('click',e=>{
 });
 document.addEventListener('visibilitychange',()=>{if(engine?.running){engine.tick(performance.now());audio.cancel();if(!document.hidden)requestWake();}render();});
 // ===== 4. 画面入力・YAML入出力 =====
-$('config-form').addEventListener('input',()=>{if(engine?.phase==='idle'){try{$('yaml').value=serialize(validate(fromForm()));message('未反映の変更があります。「保存してタイマーへ」を押してください。');}catch(e){message(e.message,true);}}});
+$('config-form').addEventListener('input',e=>{if(e.target.dataset.sound&&e.target.value.startsWith('__'))return;if(engine?.phase==='idle'){try{$('yaml').value=serialize(validate(fromForm()));message('未反映の変更があります。「保存してタイマーへ」を押してください。');}catch(e){message(e.message,true);}}});
 $('config-form').addEventListener('submit',e=>{e.preventDefault();try{apply(fromForm());$('settings').close();}catch(error){message(error.message,true);}});
-$('apply-yaml').addEventListener('click',()=>{try{apply(parseConfig($('yaml').value));}catch(e){message(e.message,true);}});
-$('defaults').addEventListener('click',()=>{try{apply(structuredClone(defaults));}catch(e){message(e.message,true);}});
-$('import').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>200000)throw new Error('YAMLは200KB以内にしてください。');apply(parseConfig(await file.text()));}catch(error){message(error.message,true);}finally{e.target.value='';}});
+$('apply-yaml').addEventListener('click',()=>{try{apply(parseConfig($('yaml').value,{defaults}));}catch(e){message(e.message,true);}});
+$('defaults').addEventListener('click',()=>{try{local.dispose();apply(structuredClone(defaults));}catch(e){message(e.message,true);}});
+$('import').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>200000)throw new Error('YAMLは200KB以内にしてください。');apply(parseConfig(await file.text(),{defaults}));}catch(error){message(error.message,true);}finally{e.target.value='';}});
 $('export').addEventListener('click',()=>{
-  try { const text=serialize(parseConfig($('yaml').value)),url=URL.createObjectURL(new Blob([text],{type:'text/yaml'})),a=document.createElement('a');a.href=url;a.download='timer.yaml';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000); }
+  try { const text=serialize(parseConfig($('yaml').value,{defaults})),url=URL.createObjectURL(new Blob([text],{type:'text/yaml'})),a=document.createElement('a');a.href=url;a.download='timer.yaml';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000); }
   catch(e){message(e.message,true);}
 });
 $('sound-fields').addEventListener('click',async e=>{
   const key=e.target.dataset.preview;if(!key)return;
-  let preview;
-  try { const draft=validate(fromForm());preview=new AudioPlayer(draft,text=>message(text,true));await preview.unlock();preview.play({id:'preview',key,at:performance.now()}); }
-  catch(error){message(error.message,true);}
+  cancelPreview(); const token=previewToken;
+  try {
+    const draft=validate(fromForm());
+    preview ||= new AudioPlayer(draft,text=>message(text,true),local);
+    preview.config=draft; await preview.unlock();
+    if(token!==previewToken)return;
+    preview.play({id:`preview-${token}`,key,at:performance.now()});
+  } catch(error){message(error.message,true);}
 });
-// ===== 5. リポジトリYAMLを読み込み、保存済み設定を復元 =====
+window.addEventListener('pagehide',()=>{cancelPreview();preview?.dispose();audio?.dispose();local.dispose();releaseWake();});
+window.addEventListener('pageshow',e=>{if(e.persisted&&engine){engine.pause(performance.now());sync();render();message('ページに戻りました。ローカル音源は再選択してください。STARTで再開できます。',true);}});
+// ===== 5. 初期設定の取得失敗時も起動し、旧保存設定を移行 =====
+const warnings=[];
 try {
-  const response=await fetch('./config/timer.yaml');if(!response.ok)throw new Error(`設定読み込み失敗: HTTP ${response.status}`);
-  defaults=parseConfig(await response.text());let initial=structuredClone(defaults),warning='';
-  try { const saved=localStorage.getItem(storageKey);if(saved)initial=parseConfig(saved); }
-  catch(e){warning=`保存済み設定を使えないため初期設定を読み込みました: ${e.message}`;}
-  apply(initial);if(warning)message(warning,true);
-} catch(e){message(e.message,true);$('state').textContent='設定を読み込めません。ページを再読み込みしてください。';}
+  const response=await fetch('./config/timer.yaml');if(!response.ok)throw new Error(`HTTP ${response.status}`);
+  defaults=parseConfig(await response.text(),{warnings});
+} catch(e) { defaults=emergencyConfig(); warnings.push(`初期YAMLを読み込めないため合成音の緊急設定で起動しました: ${e.message}`); }
+let initial=structuredClone(defaults);
+try {
+  const saved=localStorage.getItem(storageKey)||localStorage.getItem('interval-timer:0.1');
+  if(saved)initial=parseConfig(saved,{defaults,warnings});
+} catch(e){warnings.push(`保存済み設定が不正なため初期設定で起動しました: ${e.message}`);}
+apply(initial); if(warnings.length)message(warnings.join(' '),true);
