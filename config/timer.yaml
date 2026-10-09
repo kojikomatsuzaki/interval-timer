@@ -1,0 +1,42 @@
+# interval-timer Ver. 0.1 — 時間の単位は秒
+version: '0.1'
+timer:
+  act_seconds: 600
+  rest_seconds: 60
+  rounds: 3
+  progression: auto
+  countdown_seconds: 3
+  minute_interval_seconds: 60
+  warning_before_seconds: 60
+display:
+  title: INTERVAL TIMER
+  show_tenths: false
+  accent: '#c4f36b'
+audio:
+  enabled: true
+  volume: 0.7
+  countdown:
+    source: synth:beep
+    volume: 0.5
+    count: 1
+    interval_seconds: 0.15
+  start:
+    source: synth:horn
+    volume: 0.8
+    count: 1
+    interval_seconds: 0.15
+  minute:
+    source: synth:bell
+    volume: 0.3
+    count: 1
+    interval_seconds: 0.15
+  warning:
+    source: synth:bell
+    volume: 0.3
+    count: 2
+    interval_seconds: 0.18
+  end:
+    source: synth:gong
+    volume: 0.8
+    count: 5
+    interval_seconds: 0.2
