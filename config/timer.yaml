@@ -21,7 +21,7 @@ audio:
     count: 1
     interval_seconds: 0.15
   start:
-    source: synth:horn
+    source: audio/reggaehorn.mp3
     volume: 0.8
     count: 1
     interval_seconds: 0.15
