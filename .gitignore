@@ -1,3 +1,8 @@
 node_modules/
 .DS_Store
 test-results/
+
+# 再配布しない旧第三者音源
+audio/reggaehorn.mp3
+audio/counterbell.mp3
+audio/gon3times.mp3

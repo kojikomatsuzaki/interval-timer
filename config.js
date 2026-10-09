@@ -1,6 +1,6 @@
 // ===== 1. YAML読み書きと0.1→0.2移行 =====
 import { load, dump, JSON_SCHEMA } from './vendor/js-yaml.mjs';
-import { SOUND_KEYS, FALLBACK_IDS, builtinCatalog, description, sourceId, SILENCE } from './catalog.js';
+import { SOUND_KEYS, FALLBACK_IDS, builtinCatalog, description, sourceId, SILENCE, retiredSourceReplacement } from './catalog.js?v=0.2-release1';
 export const soundKeys = SOUND_KEYS;
 export function serialize(config) { return dump(config, { noRefs: true, lineWidth: 100, forceQuotes: true, quotingType: '"' }); }
 export function parseConfig(text, options = {}) {
@@ -15,6 +15,11 @@ export function normalizeConfig(input, { defaults, warnings = [] } = {}) {
   if (!c.audio || typeof c.audio !== 'object' || Array.isArray(c.audio)) throw new Error('audioを指定してください。');
   if (c.audio.catalog !== undefined && (!c.audio.catalog || typeof c.audio.catalog !== 'object' || Array.isArray(c.audio.catalog))) throw new Error('audio.catalogはオブジェクトです。');
   c.audio.catalog = { ...builtinCatalog(), ...structuredClone(defaults?.audio.catalog || {}), ...(c.audio.catalog || {}) };
+  const retiredIds = new Map();
+  for (const [id, sound] of Object.entries(c.audio.catalog)) {
+    const replacement = retiredSourceReplacement(sound?.source);
+    if (replacement) { retiredIds.set(id, replacement); delete c.audio.catalog[id]; }
+  }
   if (c.audio.local_max_bytes === undefined) c.audio.local_max_bytes = defaults?.audio.local_max_bytes || 20 * 1024 * 1024;
   for (const key of SOUND_KEYS) {
     const s = c.audio[key];
@@ -22,13 +27,20 @@ export function normalizeConfig(input, { defaults, warnings = [] } = {}) {
     if (s.source !== undefined) {
       if (s.selected !== undefined) throw new Error(`${key}: sourceとselectedは同時に指定できません。`);
       validateSource(s.source);
-      let id = Object.keys(c.audio.catalog).find(id => c.audio.catalog[id].source === s.source);
+      const replacement = retiredSourceReplacement(s.source);
+      let id = replacement || Object.keys(c.audio.catalog).find(id => c.audio.catalog[id].source === s.source);
       if (!id) {
         id = sourceId(s.source);
         c.audio.catalog[id] = { name: `従来の音源（${key}）`, source: s.source, description: description('従来のsource指定から移行した音源です。提供元・権利情報は未確認です。') };
       }
+      if (replacement) warnings.push(`${key}: 配信終了した第三者音源を代替音へ移行しました。`);
       s.selected = id; delete s.source;
     }
+    if (retiredIds.has(s.selected) || s.selected === 'reggae_horn') {
+      s.selected = retiredIds.get(s.selected) || 'short_horn';
+      warnings.push(`${key}: 配信終了した第三者音源を代替音へ移行しました。`);
+    }
+    if (s.selected === 'short_horn' && !Object.hasOwn(c.audio.catalog, 'short_horn')) s.selected = FALLBACK_IDS[key];
     if (typeof s.selected !== 'string' || !s.selected) throw new Error(`${key}のselectedまたはsourceを指定してください。`);
     if (!Object.hasOwn(c.audio.catalog, s.selected)) {
       warnings.push(`${key}: 不明な音源ID「${s.selected}」を合成音に戻しました。`);

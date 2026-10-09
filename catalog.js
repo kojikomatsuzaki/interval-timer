@@ -24,3 +24,13 @@ export function sourceId(source) {
   for (const char of source) { hash ^= char.charCodeAt(0); hash = Math.imul(hash, 16777619); }
   return `source_${(hash >>> 0).toString(16)}`;
 }
+
+// 配信終了した第三者音源は、保存済み設定・旧YAMLからも代替音へ移行する。
+export function retiredSourceReplacement(source) {
+  if (typeof source !== 'string') return;
+  const base = 'https://kojikomatsuzaki.github.io/interval-timer/';
+  let url; try { url = new URL(source, base); } catch { return; }
+  if (url.origin !== new URL(base).origin) return;
+  const replacements = { 'reggaehorn.mp3': 'short_horn', 'counterbell.mp3': 'electronic_bell', 'gon3times.mp3': 'electronic_gong' };
+  return replacements[url.pathname.replace(/^\/interval-timer\/audio\//, '')];
+}

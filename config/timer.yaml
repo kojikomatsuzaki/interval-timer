@@ -22,7 +22,7 @@ audio:
     count: 1
     interval_seconds: 0.15
   start:
-    selected: reggae_horn
+    selected: short_horn
     volume: 0.8
     count: 1
     interval_seconds: 0.15
@@ -42,17 +42,6 @@ audio:
     count: 5
     interval_seconds: 0.2
   catalog:
-    reggae_horn:
-      name: "レゲエホーン（許諾未確認・既存音源）"
-      description:
-        text: "従来のACT開始音です。公開ファイルの再配布許諾は未確認です。"
-        language: ja
-        author: "OpenAI Codex（AI草稿）"
-        created: "2026-10-09"
-      source: audio/reggaehorn.mp3
-      provider: "エスフェクツ"
-      attribution_url: https://esffects.net/397.html
-      license: null # 公開リポジトリへの同梱許諾は未確認
     soft_chime:
       name: "やわらかいチャイム"
       description:

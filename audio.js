@@ -1,4 +1,4 @@
-import { resolveSound, SILENCE } from './catalog.js';
+import { resolveSound, SILENCE } from './catalog.js?v=0.2-release1';
 // ===== 1. ユーザー操作で音声を有効化・独自音源を準備 =====
 export class AudioPlayer {
   constructor(config, report, local) { this.generation = 0; this.local = local; this.config = config; this.report = report; this.buffers = new Map(); this.nodes = new Set(); this.scheduled = new Set(); }

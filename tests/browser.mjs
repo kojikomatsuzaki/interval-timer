@@ -5,7 +5,7 @@ const require=createRequire(import.meta.url),{chromium}=require('playwright');
 const root=new URL('../',import.meta.url),base=process.env.TEST_URL||'http://127.0.0.1:8766/';
 const output=process.env.TEST_OUTPUT||'/tmp/interval-v02-tests';mkdirSync(output,{recursive:true});
 const wav=readFileSync(new URL('../audio/soft-chime.wav',import.meta.url));
-const mp3=readFileSync(process.env.MP3_FIXTURE||new URL('../audio/counterbell.mp3',import.meta.url));
+const mp3=readFileSync(process.env.MP3_FIXTURE||new URL('./fixtures/generated-chime.mp3',import.meta.url));
 const browsers=[['Chrome','/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'],['Edge','/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge']];
 let checks=0;
 for(const [name,executablePath] of browsers){
@@ -17,10 +17,10 @@ for(const [name,executablePath] of browsers){
  const rect=await page.locator('.timer-screen').boundingBox();assert.ok(Math.abs(rect.width/rect.height-16/9)<.01);assert.ok(rect.y+rect.height<=1000);assert.equal(await page.locator('#settings').isVisible(),false);checks++;
  await page.screenshot({path:`${output}/${name.toLowerCase()}-timer.png`});
  const decoded=await page.evaluate(async()=>{const ctx=new AudioContext(),result=[];try{for(const name of ['soft-chime','bright-bell','low-gong','short-horn']){const response=await fetch(`audio/${name}.wav`);if(!response.ok)throw Error(name);const buffer=await ctx.decodeAudioData(await response.arrayBuffer());result.push(buffer.duration>0&&buffer.numberOfChannels===1);}}finally{await ctx.close();}return result;});assert.deepEqual(decoded,[true,true,true,true]);checks++;
- const moduleURL=new URL('audio.js?v=0.2-safari1',base).href;
+ const moduleURL=new URL('audio.js?v=0.2-release1',base).href;
  await page.evaluate(async url=>{const {AudioPlayer}=await import(url);const play=AudioPlayer.prototype.play;window.events=[];AudioPlayer.prototype.play=function(event,now){window.events.push({key:event.key,at:event.at,local:!!this.local?.get(event.key),enabled:this.config.audio.enabled,selected:this.config.audio[event.key].selected});return play.call(this,event,now);};},moduleURL);
  async function settings(){await page.locator('#settings-toggle').click();if(!(await page.locator('#editable details').evaluate(el=>el.open)))await page.locator('#editable details summary').click();}
- await settings();assert.equal(await page.locator('[data-sound=start] option').count(),12);
+ await settings();assert.equal(await page.locator('[data-sound=start] option').count(),11);
  await page.locator('[data-sound=start]').selectOption('soft_chime');assert.match(await page.locator('[data-description=start]').innerText(),/やわらかい/);
  await page.locator('[data-preview=start]').click();await page.waitForTimeout(500);assert.equal(await page.locator('#phase').innerText(),'READY');checks++;
  // Real file chooser, MP3 decode, WAV replacement, trial and Blob lifecycle.
@@ -47,6 +47,10 @@ for(const [name,executablePath] of browsers){
  await page.locator('[data-sound=start]').selectOption('silent');await page.locator('[data-preview=start]').click();await page.waitForTimeout(200);assert.equal(await page.locator('#phase').innerText(),'READY');await page.locator('.apply').click();await page.locator('#mute').click();assert.equal(await page.locator('#mute').innerText(),'音声 OFF');checks++;
  // Manual ACT/REST waits and START advances.
  await settings();await page.locator('[data-path="timer.progression"]').selectOption('manual');await page.locator('[data-path="timer.act_seconds"]').fill('1');await page.locator('[data-path="timer.rest_seconds"]').fill('1');await page.locator('[data-path="timer.countdown_seconds"]').fill('0');await page.locator('.apply').click();await page.locator('#start').click();await page.waitForFunction(()=>document.querySelector('#phase-note').textContent.includes('STARTでREST'));await page.locator('#start').click();await page.waitForFunction(()=>document.querySelector('#phase-note').textContent.includes('次のACT'));await page.locator('#start').click();await page.waitForFunction(()=>document.querySelector('#phase').textContent==='FINISH');await page.locator('#reset').click();checks++;
+ // Saved 0.2 catalog entries for retired files are removed and replaced on startup.
+ await page.evaluate(async()=>{const {load}=await import('./vendor/js-yaml.mjs');const c=load(localStorage.getItem('interval-timer:0.2'));c.audio.catalog.reggae_horn={...c.audio.catalog.soft_chime,source:'audio/reggaehorn.mp3'};c.audio.start.selected='reggae_horn';localStorage.setItem('interval-timer:0.2',JSON.stringify(c));});
+ await page.reload();await page.waitForFunction(()=>!document.querySelector('#start').disabled);await settings();assert.equal(await page.locator('[data-sound=start]').inputValue(),'short_horn');
+ assert.ok(!await page.evaluate(()=>localStorage.getItem('interval-timer:0.2').includes('reggaehorn.mp3')));checks++;
  // Broken saved data and missing initial YAML do not prevent startup.
  await page.evaluate(()=>localStorage.setItem('interval-timer:0.2','bad: [yaml'));await page.reload();await page.waitForFunction(()=>!document.querySelector('#start').disabled);assert.match(await page.locator('#message').innerText(),/保存済み設定が不正/);checks++;
  await page.evaluate(()=>localStorage.clear());await page.route('**/config/timer.yaml*',route=>route.fulfill({status:500,body:'error'}));await page.reload();await page.waitForFunction(()=>!document.querySelector('#start').disabled);assert.match(await page.locator('#message').innerText(),/緊急設定/);await page.unroute('**/config/timer.yaml*');checks++;
@@ -64,6 +68,6 @@ for(const [name,executablePath] of browsers){
  await race.goto(base);await race.waitForFunction(()=>!document.querySelector('#start').disabled);await race.locator('#settings-toggle').click();await race.locator('#editable details summary').click();await race.locator('[data-sound=start]').selectOption('soft_chime');
  await Promise.all([race.waitForRequest('**/audio/soft-chime.wav'),race.locator('[data-preview=start]').click()]);await race.locator('.apply').click();
  await delayed.fulfill({body:wav,contentType:'audio/wav'});await race.waitForTimeout(400);assert.equal(await race.locator('#notice').isVisible(),false);assert.deepEqual(raceErrors,[]);await regression.close();checks++;
- assert.deepEqual(errors,[]);console.log(`${name}: 19 browser checks PASS, no JavaScript errors. ${requests.length} observed GET requests.`);await browser.close();
+ assert.deepEqual(errors,[]);console.log(`${name}: 20 browser checks PASS, no JavaScript errors. ${requests.length} observed GET requests.`);await browser.close();
 }
 console.log(`Total ${checks} browser checks PASS. Outputs: ${output}`);

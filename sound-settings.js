@@ -1,4 +1,4 @@
-import { SOUND_KEYS, sourceId, description } from './catalog.js';
+import { SOUND_KEYS, sourceId, description } from './catalog.js?v=0.2-release1';
 import { validateSource } from './config.js?v=0.2';
 // ===== 音源選択UI。ローカル選択は永続設定を変更しない =====
 export class SoundSettings {
